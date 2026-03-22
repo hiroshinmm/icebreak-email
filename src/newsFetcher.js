@@ -43,7 +43,7 @@ async function fetchOgImage(articleUrl) {
 }
 
 // ニューストピックス取得メイン関数
-async function fetchTopics(sources) {
+async function fetchTopics(sources, history = {}) {
     console.log('Fetching topics from multiple sources...');
     const now = new Date();
     const tenDaysAgo = new Date(now.getTime() - (10 * 24 * 60 * 60 * 1000));
@@ -126,23 +126,27 @@ async function fetchTopics(sources) {
     const finalTopics = [];
 
     for (const source of sources) {
-        const categoryTopics = uniqueTopics.filter(t => t.tag === source.category);
+        // 履歴に含まれていない記事を抽出
+        const categoryTopics = uniqueTopics.filter(t => t.tag === source.category && !history[t.link]);
+        
         if (categoryTopics.length > 0) {
+            // 履歴にない最初の記事を採用
             finalTopics.push(categoryTopics[0]);
         } else {
+            // 全て履歴にあるか、記事がない場合
             finalTopics.push({
                 title: "今週の最新ニュースはありませんでした",
                 link: "#",
                 tag: source.category,
                 pubDate: "---",
-                snippet: "該当カテゴリの過去10日以内の関連ニュースは見つかりませんでした。",
+                snippet: "該当カテゴリの過去10日以内で、まだ配信されていない関連ニュースは見つかりませんでした。",
                 imageUrl: null,
                 insight: "引き続き次回以降のアップデートにご期待ください。"
             });
         }
     }
 
-    console.log(`Aggregated ${finalTopics.length} topics.`);
+    console.log(`Aggregated ${finalTopics.length} topics (History filtered).`);
     return finalTopics;
 }
 

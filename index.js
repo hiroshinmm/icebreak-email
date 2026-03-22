@@ -5,6 +5,7 @@ const { generateInsight } = require('./src/insightGenerator');
 const { processNewsImages } = require('./src/imageProcessor');
 const { sendEmail } = require('./src/emailService');
 const { generateEmailTemplate, generateIndexHtml } = require('./src/templateGenerator');
+const { loadHistory, saveHistory, updateHistory } = require('./src/historyManager');
 
 async function main() {
     const configPath = path.join(__dirname, 'config', 'config.json');
@@ -25,7 +26,8 @@ async function main() {
     }
 
     // 1. ニュースの取得
-    const topics = await fetchTopics(sources);
+    const history = loadHistory();
+    const topics = await fetchTopics(sources, history);
 
     // 2. AI考察を全トピックに対して生成
     console.log(`Generating AI Insights for ${topics.length} topics in parallel...`);
@@ -67,6 +69,11 @@ async function main() {
             html: htmlBody,
             attachments
         });
+        
+        // 配信成功後に履歴を更新・保存
+        const updatedHistory = updateHistory(history, topics);
+        saveHistory(updatedHistory);
+        console.log('History updated and saved.');
     } else {
         console.log('No topics found. Skipping email.');
     }
