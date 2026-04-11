@@ -9,6 +9,7 @@ GitHub Actions のような環境から実行した際に、TFTCentral などの
 - **相対パスの絶対パス化**: サイトから抽出した `og:image` や `<img>` の `src` 属性が `/wp-content/...` のような相対パスであった場合でも、`new URL(src, articleUrl).href` を用いて正しい絶対パスに解決する処理を実装しました。
 - **Lazy Loading 対応とフォールバックの強化**: `<img data-src="..."/>` といった遅延読み込み属性を使用しているサイトにも対応しました。また、抽出した `og:image` のURLフォーマットが不正な場合には、記事内の画像を優先して探索するようにフォールバック処理を強化しました。
 - **エラーログの出力**: 取得に失敗した場合の原因を特定しやすくするため、詳細なエラーメッセージを出力するようにしました。
+- **Puppeteerフォールバックの追加 (追加修正)**: GitHub Actions の IP が Cloudflare 等にボットとして判定され `axios` で `403 Forbidden` や `503` エラーが発生した場合（今回の `monitor-launch-tracker` なども該当）、自動的に Puppeteer を立ち上げてヘッドレスブラウザ経由でページ内容を取得・抽出する処理を追加しました。
 
 ```diff
 -        const res = await axios.get(articleUrl, {
