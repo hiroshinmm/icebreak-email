@@ -52,7 +52,52 @@ async function fetchOgImage(articleUrl) {
             return ogImage;
         }
     } catch (e) {
-        console.error(`Failed to fetch OG image for ${articleUrl}: ${e.message}`);
+        console.error(`Failed to fetch OG image with axios for ${articleUrl}: ${e.message}`);
+        
+        // 403 Forbiddenや503など、Cloudflareブロックが疑われる場合はPuppeteerでフォールバック
+        if (e.response && (e.response.status === 403 || e.response.status === 503)) {
+            console.log(`Cloudflare block detected/suspected. Falling back to Puppeteer...`);
+            try {
+                const puppeteer = require('puppeteer');
+                const browser = await puppeteer.launch({
+                    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === 'linux' ? '/usr/bin/google-chrome' : undefined),
+                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                });
+                const page = await browser.newPage();
+                await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
+                await page.goto(articleUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+                const html = await page.content();
+                await browser.close();
+                
+                const $ = cheerio.load(html);
+                let ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
+                
+                if (!ogImage || !ogImage.match(/^https?:\/\//i)) {
+                    const possibleImgs = $('article img, .post-content img, .entry-content img, main img').toArray();
+                    for (const img of possibleImgs) {
+                        const src = $(img).attr('src') || $(img).attr('data-src');
+                        const isIcon = src && (src.includes('avatar') || src.includes('profile') || src.match(/favicon|logo|icon|v\.svg|vg_logo/i));
+                        if (src && !isIcon) {
+                            try {
+                                const resolvedUrl = new URL(src, articleUrl).href;
+                                if (resolvedUrl.match(/^https?:\/\//i)) {
+                                    ogImage = resolvedUrl;
+                                    break;
+                                }
+                            } catch (err) {}
+                        }
+                    }
+                } else {
+                    try { ogImage = new URL(ogImage, articleUrl).href; } catch (err) {}
+                }
+                
+                if (ogImage && ogImage.match(/^https?:\/\//i)) {
+                    return ogImage;
+                }
+            } catch (puppeteerErr) {
+                console.error(`Puppeteer fallback also failed for ${articleUrl}: ${puppeteerErr.message}`);
+            }
+        }
     }
     return null;
 }
