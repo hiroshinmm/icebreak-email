@@ -4,7 +4,7 @@
 本システムは、Node.js をベースとしたモジュール型設計を採用している。各モジュールは単一責任の原則に従い、データの取得、生成、処理を担当する。
 
 - **`index.js`**: 全体の実行フローを制御するエントリポイント
-- **`src/newsFetcher.js`**: RSS フィードの取得と OGP 画像の抽出
+- **`src/newsFetcher.js`**: RSS フィードの取得と OGP 画像の抽出（ボット保護回避のためのPuppeteer動作を含む）
 - **`src/insightGenerator.js`**: Google Gemini API（モデル名: `gemini-3.1-flash-lite-preview`）へのプロンプト制御
 - **`src/imageProcessor.js`**: 外部 URL 画像の保存および、プレースホルダー管理
 - **`src/templateGenerator.js`**: HTML およびメールテンプレートの動的生成
@@ -13,7 +13,7 @@
 ## 2. データの流れ (Data Flow)
 1. **Fetch (RSS)**: `sources.json` を全件読み込み、各 RSS サイトへ並列にリクエストを送信。
 2. **Filter**: カテゴリ別キーワードと、直近 10 日間という日付条件により記事を絞り込む。
-3. **OGP Extract**: RSS 内に画像がない場合、記事 URL をフェッチして OGP 画像パスを特定。
+3. **OGP Extract**: RSS 内に画像がない場合、Axiosで記事 URL をフェッチして OGP 画像パスを特定。相対パスの絶対パス化やLazy Loading（`data-src`）画像の抽出にも対応し、Cloudflareによるアクセスブロック（403/503）時にはPuppeteerを使ったヘッドレスブラウザからの取得へ自動フォールバックする。
 4. **AI Generation**: 抽出したニュース記事（タイトル・概要）を Gemini に投げ、日本語翻訳、日本語サマリー（200文字）、エンジニア向け一言考察を JSON 形式で受け取る。
 5. **Image Processing**: 画像パスの整理とローカル（dist/output/）への保存。画像がない場合はデフォルト画像を割り当てる。
 6. **Output**: Web 表示用の `dist/index.html` の生成、およびメール用の HTML ボディ作成と送信。
