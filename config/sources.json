@@ -25,7 +25,7 @@
     {
         "category": "Display/TFT",
         "urls": [
-            "https://www.tftcentral.co.uk/feed",
+            "https://tftcentral.co.uk/feed",
             "https://www.theverge.com/rss/tech/monitors/index.xml",
             "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml",
             "https://ascii.jp/rss.xml"

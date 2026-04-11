@@ -11,33 +11,48 @@ async function fetchOgImage(articleUrl) {
     if (!articleUrl || articleUrl === '#') return null;
     try {
         const res = await axios.get(articleUrl, {
-            timeout: 5000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+            timeout: 10000,
+            headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
+            }
         });
         const $ = cheerio.load(res.data);
         let ogImage = $('meta[property="og:image"]').attr('content')
             || $('meta[name="twitter:image"]').attr('content');
         
-        // フォールバック: メタタグがない場合、記事内の最初の大きそうな画像を探す
-        if (!ogImage) {
+        // フォールバック: メタタグがない場合、あるいは正しくない場合、記事内の最初の大きそうな画像を探す
+        if (!ogImage || !ogImage.match(/^https?:\/\//i)) {
             const possibleImgs = $('article img, .post-content img, .entry-content img, main img').toArray();
             for (const img of possibleImgs) {
-                const src = $(img).attr('src');
+                const src = $(img).attr('src') || $(img).attr('data-src'); // lazy loading fallback
                 const alt = $(img).attr('alt') || '';
                 const isIcon = src && (src.includes('avatar') || src.includes('profile') || src.match(/favicon|logo|icon|v\.svg|vg_logo/i));
                 
-                if (src && src.match(/^https?:\/\//i) && !isIcon) {
-                    ogImage = src;
-                    break;
+                if (src && !isIcon) {
+                    try {
+                        const resolvedUrl = new URL(src, articleUrl).href;
+                        if (resolvedUrl.match(/^https?:\/\//i)) {
+                            ogImage = resolvedUrl;
+                            break;
+                        }
+                    } catch (e) {
+                        // Ignore relative parsing error
+                    }
                 }
             }
+        } else {
+            // resolve relative paths for ogImage if needed
+            try {
+                ogImage = new URL(ogImage, articleUrl).href;
+            } catch (e) {}
         }
 
         if (ogImage && ogImage.match(/^https?:\/\//i)) {
             return ogImage;
         }
     } catch (e) {
-        // OGP取得失敗は無視
+        console.error(`Failed to fetch OG image for ${articleUrl}: ${e.message}`);
     }
     return null;
 }

@@ -1,0 +1,5 @@
+- [x] `src/newsFetcher.js` の改善 (タイムアウト延長、相対パス対応、ログ強化)
+- [x] `config/sources.json` の修正 (TFTCentralのURL修正)
+- [x] `src/imageProcessor.js` の微調整 (User-Agent更新)
+- [x] 修正内容のローカル検証
+- [x] Walkthroughの作成

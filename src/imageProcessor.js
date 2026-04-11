@@ -30,7 +30,7 @@ async function processNewsImages(topics, outputDir) {
         console.log(`Processing image ${index}: ${topic.tag}...`);
         const page = await browser.newPage();
         // Set User-Agent to avoid blocking
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
         await page.setViewport({ width: 600, height: 100 });
 
         const htmlContent = `
