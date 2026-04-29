@@ -1,99 +1,34 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 const Parser = require('rss-parser');
-const fs = require('fs');
-const path = require('path');
+const { extractImageFromHtml } = require('./imageExtractor');
+const { getBrowser } = require('./browserManager');
 
 const parser = new Parser();
 
-// OGPから画像を取得するヘルパー関数
 async function fetchOgImage(articleUrl) {
     if (!articleUrl || articleUrl === '#') return null;
     try {
         const res = await axios.get(articleUrl, {
             timeout: 10000,
-            headers: { 
+            headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
             }
         });
-        const $ = cheerio.load(res.data);
-        let ogImage = $('meta[property="og:image"]').attr('content')
-            || $('meta[name="twitter:image"]').attr('content');
-        
-        // フォールバック: メタタグがない場合、あるいは正しくない場合、記事内の最初の大きそうな画像を探す
-        if (!ogImage || !ogImage.match(/^https?:\/\//i)) {
-            const possibleImgs = $('article img, .post-content img, .entry-content img, main img').toArray();
-            for (const img of possibleImgs) {
-                const src = $(img).attr('src') || $(img).attr('data-src'); // lazy loading fallback
-                const alt = $(img).attr('alt') || '';
-                const isIcon = src && (src.includes('avatar') || src.includes('profile') || src.match(/favicon|logo|icon|v\.svg|vg_logo/i));
-                
-                if (src && !isIcon) {
-                    try {
-                        const resolvedUrl = new URL(src, articleUrl).href;
-                        if (resolvedUrl.match(/^https?:\/\//i)) {
-                            ogImage = resolvedUrl;
-                            break;
-                        }
-                    } catch (e) {
-                        // Ignore relative parsing error
-                    }
-                }
-            }
-        } else {
-            // resolve relative paths for ogImage if needed
-            try {
-                ogImage = new URL(ogImage, articleUrl).href;
-            } catch (e) {}
-        }
-
-        if (ogImage && ogImage.match(/^https?:\/\//i)) {
-            return ogImage;
-        }
+        return extractImageFromHtml(res.data, articleUrl);
     } catch (e) {
         console.error(`Failed to fetch OG image with axios for ${articleUrl}: ${e.message}`);
-        
-        // 403 Forbiddenや503など、Cloudflareブロックが疑われる場合はPuppeteerでフォールバック
+
         if (e.response && (e.response.status === 403 || e.response.status === 503)) {
-            console.log(`Cloudflare block detected/suspected. Falling back to Puppeteer...`);
+            console.log(`Cloudflare block detected. Falling back to Puppeteer...`);
             try {
-                const puppeteer = require('puppeteer');
-                const browser = await puppeteer.launch({
-                    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === 'linux' ? '/usr/bin/google-chrome' : undefined),
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
-                });
+                const browser = await getBrowser();
                 const page = await browser.newPage();
                 await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
                 await page.goto(articleUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
                 const html = await page.content();
-                await browser.close();
-                
-                const $ = cheerio.load(html);
-                let ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
-                
-                if (!ogImage || !ogImage.match(/^https?:\/\//i)) {
-                    const possibleImgs = $('article img, .post-content img, .entry-content img, main img').toArray();
-                    for (const img of possibleImgs) {
-                        const src = $(img).attr('src') || $(img).attr('data-src');
-                        const isIcon = src && (src.includes('avatar') || src.includes('profile') || src.match(/favicon|logo|icon|v\.svg|vg_logo/i));
-                        if (src && !isIcon) {
-                            try {
-                                const resolvedUrl = new URL(src, articleUrl).href;
-                                if (resolvedUrl.match(/^https?:\/\//i)) {
-                                    ogImage = resolvedUrl;
-                                    break;
-                                }
-                            } catch (err) {}
-                        }
-                    }
-                } else {
-                    try { ogImage = new URL(ogImage, articleUrl).href; } catch (err) {}
-                }
-                
-                if (ogImage && ogImage.match(/^https?:\/\//i)) {
-                    return ogImage;
-                }
+                await page.close();
+                return extractImageFromHtml(html, articleUrl);
             } catch (puppeteerErr) {
                 console.error(`Puppeteer fallback also failed for ${articleUrl}: ${puppeteerErr.message}`);
             }
@@ -102,18 +37,16 @@ async function fetchOgImage(articleUrl) {
     return null;
 }
 
-// ニューストピックス取得メイン関数
 async function fetchTopics(sources, history = {}) {
     console.log('Fetching topics from multiple sources...');
     const now = new Date();
     const tenDaysAgo = new Date(now.getTime() - (10 * 24 * 60 * 60 * 1000));
 
-    // 並列でソースを取得
     const sourcePromises = sources.map(async (source) => {
-        const urlFetchPromises = source.urls.map(async (url) => {
+        const urlFetchPromises = source.urls.map(async (feedUrl) => {
             const urlTopics = [];
             try {
-                const feed = await parser.parseURL(url);
+                const feed = await parser.parseURL(feedUrl);
                 for (const item of feed.items) {
                     const pubDate = new Date(item.pubDate || item.isoDate);
                     if (pubDate < tenDaysAgo) continue;
@@ -134,19 +67,18 @@ async function fetchTopics(sources, history = {}) {
                             item.image?.url
                         ];
 
-                        for (const url of possibleImageLocations) {
-                            if (url && url.match(/^https?:\/\//i)) {
-                                if (url.match(/\.(jpeg|jpg|gif|png|webp|bmp)(\?.*)?$/i) || 
-                                    url.includes('/image') || url.includes('/img') || 
-                                    url.includes('cdn') || url.includes('media') || 
-                                    url.includes('ytimg')) {
-                                    imageUrl = url;
+                        for (const imageLocation of possibleImageLocations) {
+                            if (imageLocation && imageLocation.match(/^https?:\/\//i)) {
+                                if (imageLocation.match(/\.(jpeg|jpg|gif|png|webp|bmp)(\?.*)?$/i) ||
+                                    imageLocation.includes('/image') || imageLocation.includes('/img') ||
+                                    imageLocation.includes('cdn') || imageLocation.includes('media') ||
+                                    imageLocation.includes('ytimg')) {
+                                    imageUrl = imageLocation;
                                     break;
                                 }
                             }
                         }
 
-                        // YouTube フォールバック
                         if (!imageUrl && item.link && item.link.includes('youtube.com/watch')) {
                             const videoId = item.link.match(/v=([^&]+)/)?.[1];
                             if (videoId) imageUrl = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
@@ -170,7 +102,7 @@ async function fetchTopics(sources, history = {}) {
                     }
                 }
             } catch (err) {
-                console.error(`Failed to fetch from ${url}:`, err.message);
+                console.error(`Failed to fetch from ${feedUrl}:`, err.message);
             }
             return urlTopics;
         });
@@ -186,14 +118,11 @@ async function fetchTopics(sources, history = {}) {
     const finalTopics = [];
 
     for (const source of sources) {
-        // 履歴に含まれていない記事を抽出
         const categoryTopics = uniqueTopics.filter(t => t.tag === source.category && !history[t.link]);
-        
+
         if (categoryTopics.length > 0) {
-            // 履歴にない最初の記事を採用
             finalTopics.push(categoryTopics[0]);
         } else {
-            // 全て履歴にあるか、記事がない場合
             finalTopics.push({
                 title: "今週の最新ニュースはありませんでした",
                 link: "#",

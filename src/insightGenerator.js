@@ -3,7 +3,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 async function generateInsight(topic, apiKey) {
     if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY' || apiKey.includes('dummy')) {
         console.log('Skipping Insight generation: Gemini API Key is missing or invalid.');
-        return '最新のトレンドに基づいた考察（API設定後に自動生成されます）';
+        return {
+            title: topic.title,
+            snippet: topic.snippet,
+            insight: '最新のトレンドに基づいた考察（API設定後に自動生成されます）'
+        };
     }
 
     try {
@@ -38,7 +42,6 @@ async function generateInsight(topic, apiKey) {
 `;
 
         const MODEL_LIST = [
-            "gemini-3.1-flash-lite-preview",
             "gemini-2.0-flash-lite-preview-02-05",
             "gemini-2.0-flash",
             "gemini-1.5-flash",
@@ -85,12 +88,20 @@ async function generateInsight(topic, apiKey) {
         responseText = responseText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
         const json = JSON.parse(responseText);
 
-        topic.title = json.translatedTitle || topic.title;
-        topic.snippet = json.translatedSnippet || topic.snippet;
-        console.log(`✅ Translated: "${topic.title.slice(0, 30)}..."`);
-        return json.insight || 'AIによる考察の生成に失敗しました。';
+        const translatedTitle = json.translatedTitle || topic.title;
+        const translatedSnippet = json.translatedSnippet || topic.snippet;
+        console.log(`✅ Translated: "${translatedTitle.slice(0, 30)}..."`);
+        return {
+            title: translatedTitle,
+            snippet: translatedSnippet,
+            insight: json.insight || 'AIによる考察の生成に失敗しました。'
+        };
     } catch (err) {
-        return '最新のトピックとして注目を集めています。エンジニアとして、この動向が今後の技術スタックやアーキテクチャにどのような影響を与えるか、引き続き注視していきましょう。';
+        return {
+            title: topic.title,
+            snippet: topic.snippet,
+            insight: '最新のトピックとして注目を集めています。エンジニアとして、この動向が今後の技術スタックやアーキテクチャにどのような影響を与えるか、引き続き注視していきましょう。'
+        };
     }
 }
 

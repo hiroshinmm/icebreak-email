@@ -4,8 +4,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  push:
-    branches: [ main ]
   schedule:
     - cron: '0 3 * * *' # 毎日 12:00 JST (03:00 UTC)
   workflow_dispatch: # 手動実行用
@@ -48,12 +46,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node index.js
 
-      - name: Commit and Push changes (Source Code only)
+      - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add dist/index.html || true
-          git add -f dist/output/ || true
           git add config/history.json || true
           git commit -m "build: update icebreak slides [skip ci]" || echo "No changes to commit"
           git pull origin main --rebase || true

@@ -6,15 +6,14 @@ const { processNewsImages } = require('./src/imageProcessor');
 const { sendEmail } = require('./src/emailService');
 const { generateEmailTemplate, generateIndexHtml } = require('./src/templateGenerator');
 const { loadHistory, saveHistory, updateHistory } = require('./src/historyManager');
+const { closeBrowser } = require('./src/browserManager');
 
 async function main() {
     const configPath = path.join(__dirname, 'config', 'config.json');
     const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath)) : {};
-    
-    // APIキーの取得
+
     const geminiApiKey = process.env.GEMINI_API_KEY || config.gemini_api_key;
-    
-    // ニュースソースの読み込み
+
     const sourcesPath = path.join(__dirname, 'config', 'sources.json');
     let sources = [];
     if (fs.existsSync(sourcesPath)) {
@@ -25,57 +24,61 @@ async function main() {
         ];
     }
 
-    // 1. ニュースの取得
-    const history = loadHistory();
-    const topics = await fetchTopics(sources, history);
+    try {
+        // 1. ニュースの取得
+        const history = loadHistory();
+        const topics = await fetchTopics(sources, history);
 
-    // 2. AI考察を全トピックに対して生成
-    console.log(`Generating AI Insights for ${topics.length} topics in parallel...`);
-    await Promise.all(topics.map(async (topic) => {
-        topic.insight = await generateInsight(topic, geminiApiKey);
-    }));
+        // 2. AI考察を全トピックに対して生成
+        console.log(`Generating AI Insights for ${topics.length} topics in parallel...`);
+        await Promise.all(topics.map(async (topic) => {
+            const result = await generateInsight(topic, geminiApiKey);
+            topic.title = result.title;
+            topic.snippet = result.snippet;
+            topic.insight = result.insight;
+        }));
 
-    // 3. 画像のリサイズ・保存
-    const outputDir = path.join(__dirname, 'dist', 'output');
-    const attachments = await processNewsImages(topics, outputDir);
+        // 3. 画像のリサイズ・保存
+        const outputDir = path.join(__dirname, 'dist', 'output');
+        const attachments = await processNewsImages(topics, outputDir);
 
-    // 4. Webページ (dist/index.html) の生成
-    const distDir = path.join(__dirname, 'dist');
-    const indexHtml = generateIndexHtml(topics);
-    fs.writeFileSync(path.join(distDir, 'index.html'), indexHtml);
-    console.log('dist/index.html generated successfully.');
+        // 4. Webページ (dist/index.html) の生成
+        const distDir = path.join(__dirname, 'dist');
+        const indexHtml = generateIndexHtml(topics);
+        fs.writeFileSync(path.join(distDir, 'index.html'), indexHtml);
+        console.log('dist/index.html generated successfully.');
 
-    // 5. メール送信
-    if (topics.length > 0) {
-        const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : 'your-repo';
-        const pageUrl = `https://${process.env.GITHUB_REPOSITORY_OWNER || 'your-username'}.github.io/${repoName}/`;
-        
-        const emailUser = process.env.GMAIL_USER || (config.email ? config.email.user : null);
-        const emailPass = process.env.GMAIL_PASS || (config.email ? config.email.pass : null);
-        const emailTo = process.env.GMAIL_TO || (config.email ? config.email.to : null);
+        // 5. メール送信
+        if (topics.length > 0) {
+            const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : 'your-repo';
+            const pageUrl = `https://${process.env.GITHUB_REPOSITORY_OWNER || 'your-username'}.github.io/${repoName}/`;
 
-        const htmlBody = generateEmailTemplate(topics, pageUrl);
-        const subject = `[Icebreak Email] 最新テックネタ ${topics.length}選`;
-        const text = `今週のトレンドニュースを抽出しました。\n\nWebで見る:\n${pageUrl}`;
+            const emailUser = process.env.GMAIL_USER || (config.email ? config.email.user : null);
+            const emailPass = process.env.GMAIL_PASS || (config.email ? config.email.pass : null);
+            const emailTo = process.env.GMAIL_TO || (config.email ? config.email.to : null);
 
-        // メールの送信
+            const htmlBody = generateEmailTemplate(topics, pageUrl);
+            const subject = `[Icebreak Email] 最新テックネタ ${topics.length}選`;
+            const text = `今週のトレンドニュースを抽出しました。\n\nWebで見る:\n${pageUrl}`;
 
-        await sendEmail({
-            user: emailUser,
-            pass: emailPass,
-            to: emailTo,
-            subject,
-            text,
-            html: htmlBody,
-            attachments
-        });
-        
-        // 配信成功後に履歴を更新・保存
-        const updatedHistory = updateHistory(history, topics);
-        saveHistory(updatedHistory);
-        console.log('History updated and saved.');
-    } else {
-        console.log('No topics found. Skipping email.');
+            await sendEmail({
+                user: emailUser,
+                pass: emailPass,
+                to: emailTo,
+                subject,
+                text,
+                html: htmlBody,
+                attachments
+            });
+
+            const updatedHistory = updateHistory(history, topics);
+            saveHistory(updatedHistory);
+            console.log('History updated and saved.');
+        } else {
+            console.log('No topics found. Skipping email.');
+        }
+    } finally {
+        await closeBrowser();
     }
 
     console.log('Done!');
