@@ -12,7 +12,7 @@ function extractImageFromHtml(html, articleUrl) {
         } catch (e) {}
     }
 
-    const possibleImgs = $('article img, .post-content img, .entry-content img, main img').toArray();
+    const possibleImgs = $('article img, .post-content img, .entry-content img, main img, figure img, img.wp-post-image, .featured-image img, .post-thumbnail img').toArray();
     for (const img of possibleImgs) {
         const src = $(img).attr('src') || $(img).attr('data-src');
         const isIcon = src && (src.includes('avatar') || src.includes('profile') || src.match(/favicon|logo|icon|v\.svg|vg_logo/i));

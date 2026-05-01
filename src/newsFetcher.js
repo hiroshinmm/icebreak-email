@@ -25,7 +25,19 @@ async function fetchOgImage(articleUrl) {
                 const browser = await getBrowser();
                 const page = await browser.newPage();
                 await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
-                await page.goto(articleUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+                await page.goto(articleUrl, { waitUntil: 'networkidle2', timeout: 20000 });
+                const ogImageUrl = await page.evaluate(() => {
+                    const el = document.querySelector('meta[property="og:image"]') ||
+                               document.querySelector('meta[name="twitter:image"]');
+                    return el ? el.getAttribute('content') : null;
+                });
+                if (ogImageUrl) {
+                    await page.close();
+                    try {
+                        const resolved = new URL(ogImageUrl, articleUrl).href;
+                        if (resolved.match(/^https?:\/\//i)) return resolved;
+                    } catch (e) {}
+                }
                 const html = await page.content();
                 await page.close();
                 return extractImageFromHtml(html, articleUrl);
