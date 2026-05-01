@@ -42,7 +42,7 @@ async function generateInsight(topic, apiKey) {
 `;
 
         const MODEL_LIST = [
-            "gemini-2.0-flash-lite-preview-02-05",
+            "gemini-2.5-flash",
             "gemini-2.0-flash",
             "gemini-1.5-flash",
         ];
@@ -97,6 +97,7 @@ async function generateInsight(topic, apiKey) {
             insight: json.insight || 'AIによる考察の生成に失敗しました。'
         };
     } catch (err) {
+        console.error(`❌ Insight generation failed for "${topic.title.slice(0, 40)}...": ${err.message}`);
         return {
             title: topic.title,
             snippet: topic.snippet,
