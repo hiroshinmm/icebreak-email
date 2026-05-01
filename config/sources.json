@@ -5,7 +5,8 @@
             "https://www.sonyalpharumors.com/feed/",
             "https://dc.watch.impress.co.jp/data/rss/1.0/dcw/feed.rdf",
             "https://digicame-info.com/rss.xml",
-            "https://rss.itmedia.co.jp/rss/2.0/camera.xml"
+            "https://rss.itmedia.co.jp/rss/2.0/camera.xml",
+            "https://petapixel.com/feed/"
         ],
         "keywords": [
             "sony",
@@ -28,7 +29,8 @@
             "https://tftcentral.co.uk/feed",
             "https://www.theverge.com/rss/tech/monitors/index.xml",
             "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml",
-            "https://ascii.jp/rss.xml"
+            "https://blurbusters.com/feed/",
+            "https://feeds.arstechnica.com/arstechnica/gadgets"
         ],
         "keywords": [
             "monitor",
@@ -54,7 +56,8 @@
             "https://www.moguravr.com/feed/",
             "https://uploadvr.com/feed/",
             "https://panora.tokyo/feed/",
-            "https://shiropen.com/feed/"
+            "https://shiropen.com/feed/",
+            "https://www.roadtovr.com/feed/"
         ],
         "keywords": [
             "vr",
@@ -77,23 +80,20 @@
         "urls": [
             "https://www.4gamer.net/rss/index.xml",
             "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf",
-            "https://rss.itmedia.co.jp/rss/2.0/pcuser.xml",
+            "https://www.tomshardware.com/feeds/all",
             "https://www.techpowerup.com/rss/news",
-            "https://www.theverge.com/rss/gaming/index.xml"
+            "https://www.theverge.com/rss/gaming/index.xml",
+            "https://www.pcgamer.com/rss/"
         ],
         "keywords": [
-            "monitor",
-            "display",
             "gpu",
             "rtx",
             "radeon",
-            "oled",
             "gaming pc",
             "controller",
             "keyboard",
             "mouse",
             "ゲーミングモニター",
-            "ディスプレイ",
             "グラフィックボード",
             "グラボ",
             "ゲーミングPC",
@@ -107,8 +107,9 @@
             "https://zenn.dev/feed",
             "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
             "https://www.publickey1.jp/atom.xml",
-            "https://wired.jp/feed/rss",
-            "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml"
+            "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+            "https://techcrunch.com/category/artificial-intelligence/feed/",
+            "https://venturebeat.com/ai/feed/"
         ],
         "keywords": [
             "ai",

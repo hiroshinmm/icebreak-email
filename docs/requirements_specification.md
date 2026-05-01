@@ -33,12 +33,12 @@
 - **自動化**: GitHub Actions との連携により、完全メンテナンスフリーで定期実行が可能であること。
 
 ## 5. 参照ニュースサイト一覧
-システムが現在参照している主要なソースは以下の通り。
+システムが現在参照している主要なソースは以下の通り。英語ソースの記事はGemini AIが自動で日本語に翻訳・要約する。
 
 | カテゴリ | 主なソースURL |
 | :--- | :--- |
-| SonyAlpha/Imaging | [Sony Alpha Rumors](https://www.sonyalpharumors.com/), [DC Watch](https://dc.watch.impress.co.jp/), [デジカメinfo](https://digicame-info.com/) |
-| Display/TFT | [TFT Central](https://www.tftcentral.co.uk/), [The Verge (Monitors)](https://www.theverge.com/), [ITmedia PC USER](https://www.itmedia.co.jp/pcuser/) |
-| XR/Spatial | [The Verge (VR)](https://www.theverge.com/), [Mogura VR](https://www.moguravr.com/), [UploadVR](https://uploadvr.com/) |
-| Gaming/Hardware | [4Gamer.net](https://www.4gamer.net/), [PC Watch](https://pc.watch.impress.co.jp/), [TechPowerUp](https://www.techpowerup.com/) |
-| AI/Software | [Zenn](https://zenn.dev/), [PublicKey](https://www.publickey1.jp/), [ITmedia AI+ ](https://www.itmedia.co.jp/news/subtop/aiplus/) |
+| SonyAlpha/Imaging | [Sony Alpha Rumors](https://www.sonyalpharumors.com/), [DC Watch](https://dc.watch.impress.co.jp/), [デジカメinfo](https://digicame-info.com/), [ITmedia カメラ](https://www.itmedia.co.jp/), [PetaPixel](https://petapixel.com/) |
+| Display/TFT | [TFT Central](https://www.tftcentral.co.uk/), [The Verge (Monitors)](https://www.theverge.com/), [ITmedia PC USER](https://www.itmedia.co.jp/pcuser/), [Blur Busters](https://blurbusters.com/), [Ars Technica Gadgets](https://arstechnica.com/) |
+| XR/Spatial | [The Verge (VR)](https://www.theverge.com/), [Mogura VR](https://www.moguravr.com/), [UploadVR](https://uploadvr.com/), [Panora](https://panora.tokyo/), [Shiropen](https://shiropen.com/), [Road to VR](https://www.roadtovr.com/) |
+| Gaming/Hardware | [4Gamer.net](https://www.4gamer.net/), [PC Watch](https://pc.watch.impress.co.jp/), [Tom's Hardware](https://www.tomshardware.com/), [TechPowerUp](https://www.techpowerup.com/), [The Verge (Gaming)](https://www.theverge.com/), [PC Gamer](https://www.pcgamer.com/) |
+| AI/Software | [Zenn](https://zenn.dev/), [ITmedia AI+](https://www.itmedia.co.jp/news/subtop/aiplus/), [PublicKey](https://www.publickey1.jp/), [The Verge (AI)](https://www.theverge.com/ai-artificial-intelligence), [TechCrunch AI](https://techcrunch.com/category/artificial-intelligence/), [VentureBeat AI](https://venturebeat.com/ai/) |
